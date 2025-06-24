@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kalkulator Fullscreen</title>
+  <style>
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-image: url('https://files.catbox.moe/glywmy.jpg');
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      touch-action: manipulation;
+    }
+
+    .calc-container {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .display {
+      color: #000;
+      text-align: right;
+      padding: 30px 20px 10px;
+      width: 100%;
+      max-width: 500px;
+      min-height: 80px;
+      font-size: 48px;
+      background: rgba(255, 255, 255, 0.7);
+      margin-bottom: 20px;
+      border-radius: 12px;
+      font-weight: bold;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 80px;
+      font-size: 28px;
+      font-weight: bold;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.8);
+      color: #000;
+      transition: background 0.2s;
+    }
+
+    .btn.equal {
+      background: #00c853;
+      color: #fff;
+      font-weight: bold;
+      grid-column: span 4;
+    }
+
+    .btn:active {
+      background: rgba(255, 255, 255, 0.9);
+      transform: scale(0.97);
+    }
+  </style>
+</head>
+<body>
+  <div class="calc-container">
+    <div class="display" id="display">0</div>
+    <div class="buttons">
+      <div class="btn" ontouchstart="clearDisplay()">C</div>
+      <div class="btn" ontouchstart="backspace()">⌫</div>
+      <div class="btn" ontouchstart="press('(')">(</div>
+      <div class="btn" ontouchstart="press(')')">)</div>
+
+      <div class="btn" ontouchstart="press('7')">7</div>
+      <div class="btn" ontouchstart="press('8')">8</div>
+      <div class="btn" ontouchstart="press('9')">9</div>
+      <div class="btn" ontouchstart="press('/')">÷</div>
+
+      <div class="btn" ontouchstart="press('4')">4</div>
+      <div class="btn" ontouchstart="press('5')">5</div>
+      <div class="btn" ontouchstart="press('6')">6</div>
+      <div class="btn" ontouchstart="press('*')">×</div>
+
+      <div class="btn" ontouchstart="press('1')">1</div>
+      <div class="btn" ontouchstart="press('2')">2</div>
+      <div class="btn" ontouchstart="press('3')">3</div>
+      <div class="btn" ontouchstart="press('-')">−</div>
+
+      <div class="btn" ontouchstart="percent()">%</div>
+      <div class="btn" ontouchstart="press('0')">0</div>
+      <div class="btn" ontouchstart="pressDecimal()">,</div>
+      <div class="btn" ontouchstart="press('+')">+</div>
+
+      <div class="btn equal" ontouchstart="calculate()">=</div>
+    </div>
+  </div>
+
+  <script>
+    let raw = '';
+    const display = document.getElementById('display');
+
+    function press(val) {
+      raw += val;
+      updateDisplay();
+    }
+
+    function pressDecimal() {
+      raw += '.';
+      updateDisplay();
+    }
+
+    function clearDisplay() {
+      raw = '';
+      display.textContent = '0';
+      resizeFont();
+    }
+
+    function backspace() {
+      raw = raw.slice(0, -1);
+      updateDisplay();
+    }
+
+    function percent() {
+      try {
+        const match = raw.match(/(.*?)([\+\-\*\/])(\d+\.?\d*)$/);
+        if (match) {
+          const base = eval(match[1]);
+          const operator = match[2];
+          const val = parseFloat(match[3]);
+          const result = {
+            '+': base + (base * val / 100),
+            '-': base - (base * val / 100),
+            '*': base * (val / 100),
+            '/': base / (val / 100)
+          }[operator];
+          raw = result.toString();
+        } else {
+          const num = eval(raw);
+          raw = (num / 100).toString();
+        }
+        updateDisplay();
+      } catch {
+        display.textContent = 'Error';
+        raw = '';
+      }
+    }
+
+    function calculate() {
+      try {
+        const result = eval(raw);
+        const rounded = Math.round((result + Number.EPSILON) * 1e9) / 1e9;
+        raw = rounded.toString();
+        display.textContent = Number(rounded).toLocaleString('id-ID');
+        resizeFont();
+      } catch {
+        display.textContent = 'Error';
+        raw = '';
+      }
+    }
+
+    function updateDisplay() {
+      const parts = raw.split(/([+\-*/()])/g).filter(Boolean);
+      const formatted = parts.map(p => {
+        if (!isNaN(p)) {
+          return Number(p).toLocaleString('id-ID');
+        } else if (p === '.') {
+          return ',';
+        } else if (p === '/') {
+          return '÷';
+        } else if (p === '*') {
+          return '×';
+        } else if (p === '-') {
+          return '−';
+        } else if (p === '+') {
+          return '+';
+        }
+        return p;
+      }).join(' ');
+      display.textContent = formatted || '0';
+      resizeFont();
+    }
+
+    function resizeFont() {
+      const len = display.textContent.length;
+      let size = 48;
+      if (len > 10) size = 40;
+      if (len > 14) size = 32;
+      if (len > 18) size = 24;
+      if (len > 22) size = 18;
+      if (len > 26) size = 14;
+      display.style.fontSize = size + 'px';
+    }
+  </script>
+</body>
+</html>
